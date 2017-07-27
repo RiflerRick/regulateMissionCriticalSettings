@@ -280,5 +280,10 @@ def get_github_webhook_request():
     return RETURN_MSG
 
 
+@app.route('/')
+def dummy_request_handler():
+    return "This app is not meant for viewing on the web"
+
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=False)
