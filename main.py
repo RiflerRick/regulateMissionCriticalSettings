@@ -21,6 +21,7 @@ import json
 import thread
 import traceback
 import requests
+import hashlib, binascii, hmac
 from flask import Response
 from flask import Flask
 from flask import request
@@ -30,6 +31,7 @@ from flask import request
 import create_comment_on_PR as createComment
 import send_status_on_PR as sendStatus
 import mcs_config
+import webhook_secret
 
 # RETURN_MSG = "Meliora cogito #DBL"
 RETURN_MSG = "auf weidersehen"
@@ -243,13 +245,29 @@ def process_payload(thread_name, parsed_json):
         sendStatus.send(1, repo_login, repo_name, head_sha_hash, traceback.print_exception(exc_type, exc_val, exc_tb))
 
 
+def authenticate(body, hash):
+    secret = webhook_secret.SECRET
+    # github uses both the secret and the payload to authenticate
+    h = hmac.new(secret, body, hashlib.sha1)
+    password = h.hexdigest()
+    password = "sha1=" + password
+    print password
+    if password == hash:
+        return True
+    else:
+        return False
+
+
 @app.route('/', methods=['POST'])
 def get_github_webhook_request():
     resp = Response()
 
+
     if request.is_json:
         print "request is json"
         parsed_json = request.json
+        if not authenticate(request.data, request.headers.get("X-Hub-Signature")):
+            return "Go to hell!!!"
         print (request.headers)
         if request.headers["X-Github-Event"] != "pull_request":
             return "Not a pr"
