@@ -268,10 +268,13 @@ def get_github_webhook_request():
     if request.is_json:
         print "request is json"
         parsed_json = request.json
-        if not authenticate(request.data, request.headers.get("X-Hub-Signature")):
-            return "Go to hell!!!"
-        if request.headers["X-Github-Event"] != "pull_request":
-            return "Not a pr"
+        try:
+            if not authenticate(request.data, request.headers.get("X-Hub-Signature")):
+                return "Go to hell!!!"
+            if request.headers["X-Github-Event"] != "pull_request":
+                return "Not a pr"
+        except Exception:
+            return "Secret not defined..."
         # start a new thread for processing json so that webhook does not timeout.
         thread.start_new_thread(process_payload, ("payload_thread", parsed_json))
 
@@ -288,4 +291,4 @@ def dummy_request_handler():
 
 
 if __name__ == "__main__":
-    app.run(debug=False)
+    app.run(debug=True)
