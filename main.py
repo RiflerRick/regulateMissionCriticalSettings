@@ -15,13 +15,11 @@ Comment on PR page must contain the following details:
 """
 # TODO: extend support for regex on filepaths
 
-import subprocess
 import sys
-import json
 import thread
 import traceback
 import requests
-import hashlib, binascii, hmac
+import hashlib, hmac
 from flask import Response
 from flask import Flask
 from flask import request
@@ -30,6 +28,8 @@ from flask import request
 
 import create_comment_on_PR as createComment
 import send_status_on_PR as sendStatus
+
+# ------------------------------------configs and secrets--------------------------
 import mcs_config
 import webhook_secret
 
@@ -38,6 +38,8 @@ RETURN_MSG = "auf weidersehen"
 DIR_ITEM_SET = set(mcs_config.DIRS)
 
 app = Flask(__name__)
+
+
 def get_author(commit):
     """
     gets the author name of the commit
@@ -167,7 +169,6 @@ def get_position_to_comment(file):
         print num_of_lines
 
     return int(postimage_start_line) + num_of_lines
-
 
 
 def get_head_sha_hash(payload):
