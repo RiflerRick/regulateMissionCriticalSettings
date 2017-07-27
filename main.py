@@ -1,19 +1,24 @@
 #!/usr/bin/env python
 """
 Acronyms:
-- mcs : mission critical settings
+    - mcs : mission critical settings
 
-pull reequest number can be
-
-Make sure to comment on all such commits where the changes to the respective files were made
+WARNINGS:
+    - If the file name edited in a commit has the same name as a restricted directory, that
+    commit will be commented.
+    - If a webhook is redelivered from the admin, duplicate comments are created
+    on the PR page.
 
 Comment on PR page must contain the following details:
-- Who created the PR
-- Where in the file changes were made
+    - Who created the PR
+    - Where in the file changes were made
 """
+# TODO: extend support for regex on filepaths
+
 import subprocess
 import sys
 import json
+import thread
 import traceback
 import requests
 from flask import Response
@@ -156,6 +161,7 @@ def get_position_to_comment(file):
         return int(postimage_start_line)
     else:
         num_of_lines = int(postimage.split(',')[1])
+        print num_of_lines
 
     return int(postimage_start_line) + num_of_lines
 
@@ -171,6 +177,71 @@ def get_head_sha_hash(payload):
     return payload["pull_request"]["head"]["sha"]
 
 
+def process_payload(thread_name, parsed_json):
+    """
+    process the json payload
+
+    :param thread_name: dummy
+    :param parsed_json:
+    :return:
+    """
+
+    try:
+        repo_name = get_repo_name(parsed_json)
+
+        if repo_name not in mcs_config.REPO_NAMES:
+            return RETURN_MSG
+
+        pr_head_branch = get_head_branch(parsed_json)
+
+        if pr_head_branch not in mcs_config.BRANCHES:
+            return RETURN_MSG
+
+        repo_login, repo_owner = get_repo_owner(parsed_json)
+        head_sha_hash = get_head_sha_hash(parsed_json)
+        # intimating that a check is already on the way
+        sendStatus.send(-1, repo_login=repo_login, repo_name=repo_name, \
+                        head_sha_hash=head_sha_hash, stat_string="pending")
+
+        pr_number = get_PR_number(parsed_json)
+
+        # print head_sha_hash + "," + repo_login + "," + repo_owner + "," + pr_number
+        # now there will be a check on the commits in and if in any commit a file
+        # change is found that is in the list of possible file changes then comment on
+        # those changes
+
+        commits = get_commits(parsed_json)
+        for commit in commits:
+            # print "current_commit: "+commit
+            committer = get_committer(commit)
+            author = get_author(commit)
+            commit_id = get_commit_id(commit)
+            files = get_files_changed(commit)
+            for file in files:
+
+                filepath = get_file_path(file)
+
+                dir_items = set(filepath.split('/'))
+
+                if dir_items.intersection(DIR_ITEM_SET):
+                    # this is the crucial check to confirm that we are checking in the
+                    # same directory that is configured
+
+                    # WARNING: fails if the directory name is also a file name that is edited
+
+                    comment_position = get_position_to_comment(file)
+                    createComment.create(
+                        repo_name, repo_login, repo_owner, pr_number, author, committer,\
+                        commit_id, filepath, comment_position)
+
+        sendStatus.send(0, repo_login, repo_name, head_sha_hash, "success")
+
+    except Exception:
+        # sending non-zero exit code for failure
+        exc_type, exc_val, exc_tb = sys.exc_info()
+        sendStatus.send(1, repo_login, repo_name, head_sha_hash, traceback.print_exception(exc_type, exc_val, exc_tb))
+
+
 @app.route('/', methods=['POST'])
 def get_github_webhook_request():
     resp = Response()
@@ -178,66 +249,12 @@ def get_github_webhook_request():
     if request.is_json:
         print "request is json"
         parsed_json = request.json
-        print "json parsed"
-        try:
-            repo_name = get_repo_name(parsed_json)
-
-            if repo_name not in mcs_config.REPO_NAMES:
-                return RETURN_MSG
-
-            pr_head_branch = get_head_branch(parsed_json)
-
-            if pr_head_branch not in mcs_config.BRANCHES:
-                return RETURN_MSG
-
-            repo_login, repo_owner = get_repo_owner(parsed_json)
-            head_sha_hash = get_head_sha_hash(parsed_json)
-            # intimating that a check is already on the way
-            sendStatus.send(-1, repo_login=repo_login, repo_name=repo_name, \
-                            head_sha_hash=head_sha_hash, stat_string="pending")
-
-            pr_number = get_PR_number(parsed_json)
-
-            # print head_sha_hash + "," + repo_login + "," + repo_owner + "," + pr_number
-            # now there will be a check on the commits in and if in any commit a file
-            # change is found that is in the list of possible file changes then comment on
-            # those changes
-
-            commits = get_commits(parsed_json)
-            for commit in commits:
-                # print "current_commit: "+commit
-                committer = get_committer(commit)
-                author = get_author(commit)
-                commit_id = get_commit_id(commit)
-                files = get_files_changed(commit)
-                for file in files:
-
-                    filepath = get_file_path(file)
-
-                    dir_items = set(filepath.split('/'))
-                    
-                    if dir_items.intersection(DIR_ITEM_SET):
-                        # this is the crucial check to confirm that we are checking in the
-                        # same directory that is configured
-
-                        # WARNING: fails if the directory name is also a file name that is edited
-
-                        comment_position = get_position_to_comment(file)
-                        createComment.create(
-                            repo_name, repo_login, repo_owner, pr_number, author, commit_id,\
-                            filepath, comment_position)
-
-            sendStatus.send(0, repo_login, repo_name, head_sha_hash, "success")
-
-        except Exception:
-            # sending non-zero exit code for failure
-            exc_type, exc_val, exc_tb = sys.exc_info()
-            sendStatus.send(1, repo_login, repo_name, head_sha_hash, traceback.print_exception(exc_type, exc_val, exc_tb))
+        # start a new thread for processing json so that webhook does not timeout.
+        thread.start_new_thread(process_payload, ("payload_thread", parsed_json))
 
     else:
         print "request is not json"
-        # sendStatus.send(2, repo_owner, repo_login, head_sha_hash, "failed")
-        return RETURN_MSG
+        return "request was not json, please configure the payload as json"
 
     return RETURN_MSG
 

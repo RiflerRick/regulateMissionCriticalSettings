@@ -7,7 +7,7 @@ import os
 import json
 PAT_TOKEN = pat_token.TOKEN
 
-def create(repo_name, repo_login, repo_owner, pr_number, author, commit_id, filepath, comment_position):
+def create(repo_name, repo_login, repo_owner, pr_number, author, committer, commit_id, filepath, comment_position):
     """
     sends request for PR page comment to github api
     """
@@ -27,7 +27,7 @@ def create(repo_name, repo_login, repo_owner, pr_number, author, commit_id, file
         "Authorization" : "token " + PAT_TOKEN
     }
 
-    msg = '@' + author + " committed on a restricted repository: " + repo_name + " belonging to " + repo_owner + "(" + repo_login + ")" + " in the file " + filepath
+    msg = committer + " committed on a restricted repository: " + repo_name + " belonging to " + repo_owner + "(" + repo_login + ")" + " authored by " + "@" + author +" in the file " + filepath
 
     payload = {
         "body" : msg,
