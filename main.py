@@ -249,6 +249,9 @@ def get_github_webhook_request():
     if request.is_json:
         print "request is json"
         parsed_json = request.json
+        print (request.headers)
+        if request.headers["X-Github-Event"] != "pull_request":
+            return "Not a pr"
         # start a new thread for processing json so that webhook does not timeout.
         thread.start_new_thread(process_payload, ("payload_thread", parsed_json))
 
