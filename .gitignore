@@ -99,10 +99,10 @@ ENV/
 .mypy_cache/
 
 # personal access tokens
-#pat_token.py
+pat_token.py
 
 # other settings
 .idea
 
 # webhook secret
-#webhook_secret.py
+webhook_secret.py
