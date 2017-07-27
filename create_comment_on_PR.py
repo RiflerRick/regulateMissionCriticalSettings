@@ -11,14 +11,16 @@ def create(repo_name, repo_login, repo_owner, pr_number, author, commit_id, file
     """
     sends request for PR page comment to github api
     """
-    print "repo owner: "+repo_owner
-    print "repo name: "+repo_name
-    pr_number = str(pr_number)
-    print "pr_number:" +pr_number
+
+    # DEBUG statements
+    # print "repo owner: "+repo_owner
+    # print "repo name: "+repo_name
+    # print "pr_number:" +pr_number
     # print "committer: "+committer
-    print "repo_login:" +repo_login
-    print "filepath: "+filepath
-    print "comment_position: "+str(comment_position)
+    # print "repo_login:" +repo_login
+    # print "filepath: "+filepath
+    # print "comment_position: "+str(comment_position)
+    pr_number = str(pr_number)
      
     url = os.path.join("https://api.github.com/repos", repo_login, repo_name, "pulls", pr_number, "comments",)
     headers = {

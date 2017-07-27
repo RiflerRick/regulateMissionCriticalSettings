@@ -101,5 +101,5 @@ ENV/
 # personal access tokens
 pat_token.py
 
-# pycharm settings
+# other settings
 .idea

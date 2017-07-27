@@ -29,6 +29,7 @@ def send(status, repo_login, repo_name, head_sha_hash, stat_string):
         
         payload["state"] = "failure"
         payload["description"] = "Something went wrong, check in code"
+        # print the stack trace
         print stat_string
 
     elif status == 2:
@@ -42,6 +43,8 @@ def send(status, repo_login, repo_name, head_sha_hash, stat_string):
         payload["state"] = "pending"
         payload["descirption"] = "Still processing"
         
-    url = os.path.join("https://api.github.com/repos", repo_login, repo_name, "statuses", head_sha_hash)
+    url = os.path.join("https://api.github.com/repos", repo_login, repo_name, "statuses",\
+                       head_sha_hash)
     r = requests.post(url, headers=headers, data=json.dumps(payload))
-    print json.dumps(r.json(), indent=4, separators=(',', ': '))
+    # printing the json response is not really required
+    # print json.dumps(r.json(), indent=4, separators=(',', ': '))
