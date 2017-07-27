@@ -103,3 +103,6 @@ pat_token.py
 
 # other settings
 .idea
+
+# webhook secret
+webhook_secret.py

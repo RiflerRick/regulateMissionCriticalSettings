@@ -251,7 +251,6 @@ def authenticate(body, hash):
     h = hmac.new(secret, body, hashlib.sha1)
     password = h.hexdigest()
     password = "sha1=" + password
-    print password
     if password == hash:
         return True
     else:
@@ -268,7 +267,6 @@ def get_github_webhook_request():
         parsed_json = request.json
         if not authenticate(request.data, request.headers.get("X-Hub-Signature")):
             return "Go to hell!!!"
-        print (request.headers)
         if request.headers["X-Github-Event"] != "pull_request":
             return "Not a pr"
         # start a new thread for processing json so that webhook does not timeout.
