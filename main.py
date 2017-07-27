@@ -31,7 +31,8 @@ import create_comment_on_PR as createComment
 import send_status_on_PR as sendStatus
 import mcs_config
 
-RETURN_MSG = "Meliora cogito #DBL"
+# RETURN_MSG = "Meliora cogito #DBL"
+RETURN_MSG = "auf weidersehen"
 DIR_ITEM_SET = set(mcs_config.DIRS)
 
 app = Flask(__name__)
